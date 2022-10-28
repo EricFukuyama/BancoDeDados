@@ -16,10 +16,10 @@ def criarTabela(csvTabela):
     return results, len(atributos)
                 
 #Caminho = "/home/eric/Documentos/UTFPR/BancoDeDados/Trabalho1"
-Caminho = "C:\\Users\\danie\\Documents\\Faculdade\\2022.2\\Introducao a Banco de Dados\\Trabalho1"
+Caminho = "C:\\Users\\danie\\Documents\\Faculdade\\2022.2\\Introducao a Banco de Dados\\BancoDeDados\\Trabalho1"
 
 #input("Qual a pasta que está as tabelas?")
-ListaTabelasNome = ["departments", "employees_copy"]
+ListaTabelasNome = ["departments", "employees_copy", "salaries"]
 #input("Nome de quais tabelas serão usadas?").split()
 QtdeAtributos=[]
 ListaTabelas=[]
