@@ -1,5 +1,5 @@
-comando = "SELECT emp_no,first_name FROM employees Where emp_no = 10000 ORDER BY emp_no ;".replace(',', ' ').replace(';', '').replace('\'', ' ').replace('\"', ' ').rstrip(',').casefold().split()
-#input("Qual o comando SQL?").replace(',', ' ').replace(';', '').replace('\'', ' ').replace('\"', ' ').rstrip(',').casefold().split()
+#comando = "SELECT emp_no,first_name FROM employees Where emp_no = 10001 ORDER BY emp_no ;".replace(',', ' ').replace(';', '').replace('\'', ' ').replace('\"', ' ').rstrip(',').casefold().split()
+comando = input("Qual o comando SQL? ").replace(',', ' ').replace(';', '').replace('\'', ' ').replace('\"', ' ').rstrip(',').casefold().split()
 
 # Computando os índices em que se encontram os comandos na lista
 ind_select = comando.index('select')
@@ -31,15 +31,16 @@ def executarComando(ListaTabelasNome, ListaTabelas):
     # Gera tabela com todos os dados contidos em FROM
     Query = fromTudo(ListaTabelasNome, ListaTabelas)
     
-    #Gera tabela com os elementos que satisfazem o where
-    Query = where(Query)
+    if (len(com_where) != 0):
+        #Gera tabela com os elementos que satisfazem o where
+        Query = where(Query)
     
-    # Gera tabela devidamente ordenada com o algoritmo MergeSort
-    Query = orderBy(Query)
+    if (len(com_order) != 0):
+        # Gera tabela devidamente ordenada com o algoritmo MergeSort
+        Query = orderBy(Query)
 
     # Gera tabela com as colunas especificadas em SELECT
     Query = select(Query)
-
 
     # Imprime a Query final
     print(*Query, sep = '\n')
@@ -380,10 +381,6 @@ def comparacao(Condicao, Indice, Indice2, Query, i):
                     return True
 
 def where(Query):
-    
-    #verifica se a lista está vazia
-    if(len(com_where)==0):
-        return Query
     
     novaQuery=[]
     novaQuery.append(Query[0])
