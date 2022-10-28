@@ -1,6 +1,6 @@
 #from select import select
 
-comando = "SELECT * FROM salaries WHERE from_date > 2000 AND to_date < 1000 ORDER BY salary ;".replace(',', ' ').replace(';', '').rstrip(',').casefold().split()
+comando = "SELECT * FROM employees_copy WHERE from_date > 2000 AND to_date < 1000 ORDER BY gender DESC;".replace(',', ' ').replace(';', '').rstrip(',').casefold().split()
 #input("Qual o comando SQL?").replace(',', ' ').replace(';', '').rstrip(',').casefold().split()
 
 # Computando os índices em que se encontram os comandos na lista
@@ -121,6 +121,13 @@ def orderBy(Query):
     Query.pop(0)
 
     mergeSort(Query, i)
+
+    # Caso tenha colocado em ordem decrescente, é invertido a ordem dos elementos
+    try:
+        if (com_order[1] == "desc"):
+            Query.reverse()
+    except:
+        i = -1
 
     # Após ordenado, é inserida novamente
     Query.insert(0, atributos)
