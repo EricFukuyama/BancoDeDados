@@ -1,12 +1,11 @@
-#from select import select
-
-comando = "SELECT dept_no, dept_name, first_name FROM departments, employees_copy WHERE from_date > 2000 AND to_date < 1000 ORDER BY empt_no ;".replace(',', ' ').replace(';', '').rstrip(',').casefold().split()
-#input("Qual o comando SQL?").replace(',', ' ').replace(';', '').rstrip(',').casefold().split()
+comando = "SELECT emp_no,first_name FROM employees ORDER BY emp_no ;".replace(',', ' ').replace(';', '').replace('\'', ' ').replace('\"', ' ').rstrip(',').casefold().split()
+#input("Qual o comando SQL?").replace(',', ' ').replace(';', '').replace('\'', ' ').replace('\"', ' ').rstrip(',').casefold().split()
 
 # Computando os índices em que se encontram os comandos na lista
 ind_select = comando.index('select')
 ind_from = comando.index('from')
 tam_comando = len(comando)
+
 # Computando os índices não opcionais com exceções caso eles não existam
 try:
     ind_order = comando.index('order')
@@ -27,9 +26,14 @@ def printarComando():
     print(comando)
     print("")
 
-def executarComando(ListaTabelasNome, ListaTabelas, QtdeAtributos):
+#Chama as funcoes para fazer o select, from, where e orderby
+def executarComando(ListaTabelasNome, ListaTabelas):
     # Gera tabela com todos os dados contidos em FROM
     Query = fromTudo(ListaTabelasNome, ListaTabelas)
+    
+    #Gera tabela com os elementos que satisfazem o where
+    Query = where(Query)
+    
     # Gera tabela com as colunas especificadas em SELECT
     Query = select(Query)
     # Imprime a Query final
@@ -94,5 +98,281 @@ def fromTudo(ListaTabelasNome, ListaTabelas):
                     for atributo in Tabela[t]:
                         Query[cont].append(atributo)
                     cont = cont + 1
+        return Query
+    
+    return Tabela
 
-    return Query
+#procura qual é a operação entre >,<,<=,>=,!=,=
+def procuraWhere(comando):
+    if(comando.find(">")>1):
+        if(comando[comando.find(">")+1]=="="):
+            comando=comando.split(">=")
+            comando.append(">=")
+        else:
+            comando=comando.split(">")
+            comando.append(">")
+    elif(comando.find("<")>1):
+        if(comando[comando.find("<")+1]=="="):
+            comando=comando.split("<=")
+            comando.append("<=")
+        elif(comando[comando.find("<")+1]==">"):
+            comando=comando.split("<>")
+            comando.append("!=")
+        else:
+            comando=comando.split("<")
+            comando.append("<")
+    elif(comando.find("=")>1):
+        if(comando[comando.find("=")-1]=='!'):
+            comando=comando.split("!=")
+            comando.append("!=")
+        else:
+            comando=comando.split("=")
+            comando.append("=")
+    for i in range(len(comando)):
+        comando[i]=comando[i].strip()
+        try: 
+            comando[i]=int(comando[i])
+        except:
+            comando[i]=comando[i]
+    #comando é uma lista com tres posicoes, a primeira tem o primeiro elemento que será comparado, 
+    # a segunda posicao o segundo elemento e a terceira qual é a operacao comparativa 
+    return(comando)
+
+#faz a comparacao entre os elementos e verifica se eh verdadeira
+def comparacao(Condicao, Indice, Indice2, Query, i):
+    #se for string o elemento da tabela
+    try:
+        if(Indice>-1 and Indice2>-1):
+            if(Condicao[2]=='>'):
+                if Query[i][Indice].casefold()>Query[i][Indice2].casefold():
+                    return True
+            elif(Condicao[2]=='>='):
+                if Query[i][Indice].casefold()>=Query[i][Indice2].casefold():
+                    return True
+            elif(Condicao[2]=='<'):
+                if Query[i][Indice].casefold()<Query[i][Indice2].casefold():
+                    return True
+            elif(Condicao[2]=='<='):
+                if Query[i][Indice].casefold()<=Query[i][Indice2].casefold():
+                    return True
+            elif(Condicao[2]=='='):
+                if Query[i][Indice].casefold()==Query[i][Indice2].casefold():
+                    return True
+            elif(Condicao[2]=='!='):
+                if Query[i][Indice].casefold()<Query[i][Indice2].casefold():
+                    return True
+                        
+        elif(Indice>-1):
+            if(Condicao[2]=='>'):
+                if Query[i][Indice].casefold()>Condicao[1]:
+                    return True
+            elif(Condicao[2]=='>='):
+                if Query[i][Indice].casefold()>=Condicao[1]:
+                    return True
+            elif(Condicao[2]=='<'):
+                if Query[i][Indice].casefold()<Condicao[1]:
+                    return True
+            elif(Condicao[2]=='<='):
+                if Query[i][Indice].casefold()<=Condicao[1]:
+                    return True
+            elif(Condicao[2]=='='):
+                if Query[i][Indice].casefold()==Condicao[1]:
+                    return True
+            elif(Condicao[2]=='!='):
+                if Query[i][Indice].casefold()<Condicao[1]:
+                    return True
+            
+        elif(Indice2>-1):
+            if(Condicao[2]=='>'):
+                if Condicao[0]>Query[i][Indice2].casefold():
+                    return True
+            elif(Condicao[2]=='>='):
+                if Condicao[0]>=Query[i][Indice2].casefold():
+                    return True
+            elif(Condicao[2]=='<'):
+                if Condicao[0]<Query[i][Indice2].casefold():
+                    return True
+            elif(Condicao[2]=='<='):
+                if Condicao[0]<=Query[i][Indice2].casefold():
+                    return True
+            elif(Condicao[2]=='='):
+                if Condicao[0]==Query[i][Indice2].casefold():
+                    return True
+            elif(Condicao[2]=='!='):
+                if Condicao[0]<Query[i][Indice2].casefold():
+                    return True
+        
+        else:
+            if(Condicao[2]=='>'):
+                if Condicao[0]>Condicao[1]:
+                    return True
+            elif(Condicao[2]=='>='):
+                if Condicao[0]>=Condicao[1]:
+                    return True
+            elif(Condicao[2]=='<'):
+                if Condicao[0]<Condicao[1]:
+                    return True
+            elif(Condicao[2]=='<='):
+                if Condicao[0]<=Condicao[1]:
+                    return True
+            elif(Condicao[2]=='='):
+                if Condicao[0]==Condicao[1]:
+                    return True
+            elif(Condicao[2]=='!='):
+                if Condicao[0]<Condicao[1]:
+                    return True
+    #realiza as comparacoes se for int
+    except:
+        if(Indice>-1 and Indice2>-1):
+            if(Condicao[2]=='>'):
+                if Query[i][Indice]>Query[i][Indice2]:
+                    return True
+            elif(Condicao[2]=='>='):
+                if Query[i][Indice]>=Query[i][Indice2]:
+                    return True
+            elif(Condicao[2]=='<'):
+                if Query[i][Indice]<Query[i][Indice2]:
+                    return True
+            elif(Condicao[2]=='<='):
+                if Query[i][Indice]<=Query[i][Indice2]:
+                    return True
+            elif(Condicao[2]=='='):
+                if Query[i][Indice]==Query[i][Indice2]:
+                    return True
+            elif(Condicao[2]=='!='):
+                if Query[i][Indice]<Query[i][Indice2]:
+                    return True
+                        
+        elif(Indice>-1):
+            if(Condicao[2]=='>'):
+                if Query[i][Indice]>Condicao[1]:
+                    return True
+            elif(Condicao[2]=='>='):
+                if Query[i][Indice]>=Condicao[1]:
+                    return True
+            elif(Condicao[2]=='<'):
+                if Query[i][Indice]<Condicao[1]:
+                    return True
+            elif(Condicao[2]=='<='):
+                if Query[i][Indice]<=Condicao[1]:
+                    return True
+            elif(Condicao[2]=='='):
+                if Query[i][Indice]==Condicao[1]:
+                    return True
+            elif(Condicao[2]=='!='):
+                if Query[i][Indice]<Condicao[1]:
+                    return True
+            
+        elif(Indice2>-1):
+            if(Condicao[2]=='>'):
+                if Condicao[0]>Query[i][Indice2]:
+                    return True
+            elif(Condicao[2]=='>='):
+                if Condicao[0]>=Query[i][Indice2]:
+                    return True
+            elif(Condicao[2]=='<'):
+                if Condicao[0]<Query[i][Indice2]:
+                    return True
+            elif(Condicao[2]=='<='):
+                if Condicao[0]<=Query[i][Indice2]:
+                    return True
+            elif(Condicao[2]=='='):
+                if Condicao[0]==Query[i][Indice2]:
+                    return True
+            elif(Condicao[2]=='!='):
+                if Condicao[0]<Query[i][Indice2]:
+                    return True
+        
+        else:
+            if(Condicao[2]=='>'):
+                if Condicao[0]>Condicao[1]:
+                    return True
+            elif(Condicao[2]=='>='):
+                if Condicao[0]>=Condicao[1]:
+                    return True
+            elif(Condicao[2]=='<'):
+                if Condicao[0]<Condicao[1]:
+                    return True
+            elif(Condicao[2]=='<='):
+                if Condicao[0]<=Condicao[1]:
+                    return True
+            elif(Condicao[2]=='='):
+                if Condicao[0]==Condicao[1]:
+                    return True
+            elif(Condicao[2]=='!='):
+                if Condicao[0]<Condicao[1]:
+                    return True
+
+def where(Query):
+    
+    #verifica se a lista está vazia
+    if(len(com_where)==0):
+        return Query
+    
+    novaQuery=[]
+    novaQuery.append(Query[0])
+    comando = com_where
+    #transforma em string
+    comando = " ".join(com_where).casefold()
+    
+    #vai ter ou 1 campo(caso em que não há or ou and) ou tres campos(a primeira comparacao, a segunda e se é or ou and)
+    condicao=[]
+
+    #verifica se há comando AND
+    if(comando.find(" and ")>0):
+        comando = comando.split(" and ")
+        condicao.append(procuraWhere(comando[0]))
+        condicao.append(procuraWhere(comando[1]))
+        condicao.append("and")
+
+    #verifica se há comando OR
+    elif(comando.find(" or ")>0):
+        comando = comando.split("or")
+        condicao.append(procuraWhere(comando[0]))
+        condicao.append(procuraWhere(comando[1]))
+        condicao.append("or")
+
+    #Caso não tenha and e or
+    else:
+        condicao.append(procuraWhere(comando))    
+        
+    #salvar o indice onde aparece o nome da coluna da tabela que será usado
+    #caso não seja um nome de coluna, indice = -1    
+    try:
+        indice = Query[0].index(condicao[0][0])
+    except: 
+        indice =-1
+    try:
+        indice2=Query[0].index(condicao[0][1])
+    except:
+        indice2 =-1
+        
+    #no caso de nao ter and ou or
+    if(len(condicao)==1):
+        for i in range(1,len(Query)):
+            if(comparacao(condicao[0], indice, indice2, Query, i)):
+                novaQuery.append(Query[i])
+    
+    #se tiver and ou or
+    elif(len(condicao)==3):
+        try:
+            indice3 = Query[0].index(condicao[1][0])
+        except: 
+            indice3 =-1
+        try:
+            indice4=Query[0].index(condicao[1][1])
+        except:
+            indice4 =-1
+        
+        if condicao[2]=='and':
+            for i in range(1,len(Query)):
+                if(comparacao(condicao[0], indice, indice2, Query, i) and comparacao(condicao[1], indice3, indice4, Query, i)):
+                    novaQuery.append(Query[i])
+        
+        if condicao[2]=='or':
+            for i in range(1,len(Query)):
+                if(comparacao(condicao[0], indice, indice2, Query, i) or comparacao(condicao[1], indice3, indice4, Query, i)):
+                    novaQuery.append(Query[i])
+        
+    return(novaQuery)
+
