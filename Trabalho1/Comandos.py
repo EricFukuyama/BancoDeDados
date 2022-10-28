@@ -42,40 +42,38 @@ def select(Query):
     else:
         # Criada nova Query
         NovaQuery = []
-       
-        # Flag se mantém em 1 caso haja apenas um parâmetro
-        flag = 1
 
-        # Busca o índice de um atributo nas colunas
-        for atributo in com_select:
-            i = Query[0].index(atributo)
+        lenSel = len(com_select)
 
-            # Se for a primeira coluna é alocado para cada linha com append([])
-            if flag == 1:
+        i = Query[0].index(com_select[0])
+        for q in range(len(Query)):
+            NovaQuery.append([Query[q][i]])
+
+        if (lenSel > 1):
+            # Busca o índice de um atributo nas colunas
+            for atributo in com_select[1:lenSel]:
+                i = Query[0].index(atributo)
+
                 for q in range(len(Query)):
-                    NovaQuery.append([Query[q][i]])
-                flag = 0
-            
-            # Se forem as colunas restantes, é append() sem index
-            else:
-                for q in range(len(Query)):
-                    NovaQuery[q].append(Query[q][i])          
+                    NovaQuery[q].append(Query[q][i]) 
+
         return NovaQuery
 
 def fromTudo(ListaTabelasNome, ListaTabelas):
     # Flag se mantém em 1 caso haja apenas um parâmetro
-    flag = 1
-    
-    for nome_tabela in com_from:
-        # Busca o índice de um atributo para achar a(s) tabela(s) correspondente(s)
-        i = ListaTabelasNome.index(nome_tabela)
-        Tabela = ListaTabelas[i]
-        
-        if flag == 1:
-            # Se tiver sido apenas um argumento de parâmetro, basta copiar a tabela
-            Query = Tabela
-            flag = 0
-        else:
+    lenCom = len(com_from)
+
+    nome_tabela = com_from[0]
+    i = ListaTabelasNome.index(nome_tabela)
+    Tabela = ListaTabelas[i]
+
+    if lenCom > 1:
+        Query = Tabela
+        for nome_tabela in com_from[1:lenCom]:
+            # Busca o índice de um atributo para achar a(s) tabela(s) correspondente(s)
+            i = ListaTabelasNome.index(nome_tabela)
+            Tabela = ListaTabelas[i]
+            
             # Cópia feita para manipular e depois esvaziar a query
             QueryAnterior = Query.copy()
             Query = [[]]
@@ -98,4 +96,3 @@ def fromTudo(ListaTabelasNome, ListaTabelas):
                     cont = cont + 1
 
     return Query
-
