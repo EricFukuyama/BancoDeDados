@@ -1,5 +1,9 @@
-#comando = "SELECT emp_no,first_name FROM employees Where emp_no = 10001 ORDER BY emp_no ;".replace(',', ' ').replace(';', '').replace('\'', ' ').replace('\"', ' ').rstrip(',').casefold().split()
-comando = input("Qual o comando SQL? ").replace(',', ' ').replace(';', '').replace('\'', ' ').replace('\"', ' ').rstrip(',').casefold().split()
+import Auxiliares
+
+comando = "SELECT * FROM dept_emp_Copia, departments where dept_emp_Copia.dept_no=departments.dept_no;".replace(',', ' ').replace(';', '').replace('\'', ' ').replace('\"', ' ').replace('(', ' ').rstrip(',').casefold().split()
+#comando = input("Qual o comando SQL? ").replace(',', ' ').replace(';', '').replace('\'', ' ').replace('\"', ' ').rstrip(',').casefold().replace('inner', ' ').split()
+
+print(comando)
 
 # Computando os índices em que se encontram os comandos na lista
 ind_select = comando.index('select')
@@ -15,10 +19,30 @@ try:
     ind_where = comando.index('where')
 except:
     ind_where = ind_order
+try:
+    ind_join = comando.index('join')
+except:
+    ind_join = ind_where
+try:
+    ind_using = comando.index('using')
+except:
+    ind_using = ind_where
+try:
+    ind_on = comando.index('on')
+except:
+    ind_on = ind_where
 
 # Separando por partes do comando conforme lógicas criadas
 com_select = comando[ind_select+1:ind_from]
-com_from = comando[ind_from+1:ind_where]
+com_from = comando[ind_from+1:ind_join]
+
+if (ind_using != ind_where):
+    com_join = comando[ind_join+1:ind_using]
+elif (ind_on != ind_where):
+    com_join = comando[ind_join+1:ind_on]
+com_using = comando[ind_using+1:ind_where]
+com_on = comando[ind_on+1:ind_where]
+
 com_where = comando[ind_where+1:ind_order]
 com_order = comando[ind_order+2:tam_comando]
 
@@ -31,9 +55,20 @@ def executarComando(ListaTabelasNome, ListaTabelas):
     # Gera tabela com todos os dados contidos em FROM
     Query = fromTudo(ListaTabelasNome, ListaTabelas)
     
+    try:
+        if (len(com_on) != 0):
+            Query = joinOn(Query, ListaTabelasNome, ListaTabelas)
+        elif (len(com_using) != 0):
+            Query = joinUsing(Query, ListaTabelasNome, ListaTabelas)
+    except:
+        i = -1
+
     if (len(com_where) != 0):
         #Gera tabela com os elementos que satisfazem o where
-        Query = where(Query)
+        if (Auxiliares.detectaJoin(com_where)):
+            Query = joinWhere(Query)
+        else:
+            Query = where(Query)
     
     if (len(com_order) != 0):
         # Gera tabela devidamente ordenada com o algoritmo MergeSort
@@ -126,7 +161,7 @@ def orderBy(Query):
     atributos = Query[0]
     Query.pop(0)
 
-    mergeSort(Query, i)
+    Auxiliares.mergeSort(Query, i)
 
     # Caso tenha colocado em ordem decrescente, é invertido a ordem dos elementos
     try:
@@ -140,248 +175,8 @@ def orderBy(Query):
 
     return Query
 
-# MergeSort in Python (adaptação do código presente em https://www.programiz.com/dsa/merge-sort)
-def mergeSort(array, index):
-    if len(array) > 1:
-
-        #  r is the point where the array is divided into two subarrays
-        r = len(array)//2
-        L = array[:r]
-        M = array[r:]
-
-        # Sort the two halves
-        mergeSort(L, index)
-        mergeSort(M, index)
-
-        i = j = k = 0
-
-        # Until we reach either end of either L or M, pick larger among
-        # elements L and M and place them in the correct position at A[p..r]
-        while i < len(L) and j < len(M):
-            # Único trecho de código que precisou ser adaptado
-            if L[i][index] < M[j][index]:
-                array[k] = L[i]
-                i += 1
-            else:
-                array[k] = M[j]
-                j += 1
-            k += 1
-
-        # When we run out of elements in either L or M,
-        # pick up the remaining elements and put in A[p..r]
-        while i < len(L):
-            array[k] = L[i]
-            i += 1
-            k += 1
-
-        while j < len(M):
-            array[k] = M[j]
-            j += 1
-            k += 1
-
-#procura qual é a operação entre >,<,<=,>=,!=,=
-def procuraWhere(comando):
-    if(comando.find(">")>1):
-        if(comando[comando.find(">")+1]=="="):
-            comando=comando.split(">=")
-            comando.append(">=")
-        else:
-            comando=comando.split(">")
-            comando.append(">")
-    elif(comando.find("<")>1):
-        if(comando[comando.find("<")+1]=="="):
-            comando=comando.split("<=")
-            comando.append("<=")
-        elif(comando[comando.find("<")+1]==">"):
-            comando=comando.split("<>")
-            comando.append("!=")
-        else:
-            comando=comando.split("<")
-            comando.append("<")
-    elif(comando.find("=")>1):
-        if(comando[comando.find("=")-1]=='!'):
-            comando=comando.split("!=")
-            comando.append("!=")
-        else:
-            comando=comando.split("=")
-            comando.append("=")
-    for i in range(len(comando)):
-        comando[i]=comando[i].strip()
-        try: 
-            comando[i]=int(comando[i])
-        except:
-            comando[i]=comando[i]
-    #comando é uma lista com tres posicoes, a primeira tem o primeiro elemento que será comparado, 
-    # a segunda posicao o segundo elemento e a terceira qual é a operacao comparativa 
-    return(comando)
-
-#faz a comparacao entre os elementos e verifica se eh verdadeira
-def comparacao(Condicao, Indice, Indice2, Query, i):
-    #se for string o elemento da tabela
-    try:
-        if(Indice>-1 and Indice2>-1):
-            if(Condicao[2]=='>'):
-                if Query[i][Indice].casefold()>Query[i][Indice2].casefold():
-                    return True
-            elif(Condicao[2]=='>='):
-                if Query[i][Indice].casefold()>=Query[i][Indice2].casefold():
-                    return True
-            elif(Condicao[2]=='<'):
-                if Query[i][Indice].casefold()<Query[i][Indice2].casefold():
-                    return True
-            elif(Condicao[2]=='<='):
-                if Query[i][Indice].casefold()<=Query[i][Indice2].casefold():
-                    return True
-            elif(Condicao[2]=='='):
-                if Query[i][Indice].casefold()==Query[i][Indice2].casefold():
-                    return True
-            elif(Condicao[2]=='!='):
-                if Query[i][Indice].casefold()<Query[i][Indice2].casefold():
-                    return True
-                        
-        elif(Indice>-1):
-            if(Condicao[2]=='>'):
-                if Query[i][Indice].casefold()>Condicao[1]:
-                    return True
-            elif(Condicao[2]=='>='):
-                if Query[i][Indice].casefold()>=Condicao[1]:
-                    return True
-            elif(Condicao[2]=='<'):
-                if Query[i][Indice].casefold()<Condicao[1]:
-                    return True
-            elif(Condicao[2]=='<='):
-                if Query[i][Indice].casefold()<=Condicao[1]:
-                    return True
-            elif(Condicao[2]=='='):
-                if Query[i][Indice].casefold()==Condicao[1]:
-                    return True
-            elif(Condicao[2]=='!='):
-                if Query[i][Indice].casefold()<Condicao[1]:
-                    return True
-            
-        elif(Indice2>-1):
-            if(Condicao[2]=='>'):
-                if Condicao[0]>Query[i][Indice2].casefold():
-                    return True
-            elif(Condicao[2]=='>='):
-                if Condicao[0]>=Query[i][Indice2].casefold():
-                    return True
-            elif(Condicao[2]=='<'):
-                if Condicao[0]<Query[i][Indice2].casefold():
-                    return True
-            elif(Condicao[2]=='<='):
-                if Condicao[0]<=Query[i][Indice2].casefold():
-                    return True
-            elif(Condicao[2]=='='):
-                if Condicao[0]==Query[i][Indice2].casefold():
-                    return True
-            elif(Condicao[2]=='!='):
-                if Condicao[0]<Query[i][Indice2].casefold():
-                    return True
-        
-        else:
-            if(Condicao[2]=='>'):
-                if Condicao[0]>Condicao[1]:
-                    return True
-            elif(Condicao[2]=='>='):
-                if Condicao[0]>=Condicao[1]:
-                    return True
-            elif(Condicao[2]=='<'):
-                if Condicao[0]<Condicao[1]:
-                    return True
-            elif(Condicao[2]=='<='):
-                if Condicao[0]<=Condicao[1]:
-                    return True
-            elif(Condicao[2]=='='):
-                if Condicao[0]==Condicao[1]:
-                    return True
-            elif(Condicao[2]=='!='):
-                if Condicao[0]<Condicao[1]:
-                    return True
-    #realiza as comparacoes se for int
-    except:
-        if(Indice>-1 and Indice2>-1):
-            if(Condicao[2]=='>'):
-                if Query[i][Indice]>Query[i][Indice2]:
-                    return True
-            elif(Condicao[2]=='>='):
-                if Query[i][Indice]>=Query[i][Indice2]:
-                    return True
-            elif(Condicao[2]=='<'):
-                if Query[i][Indice]<Query[i][Indice2]:
-                    return True
-            elif(Condicao[2]=='<='):
-                if Query[i][Indice]<=Query[i][Indice2]:
-                    return True
-            elif(Condicao[2]=='='):
-                if Query[i][Indice]==Query[i][Indice2]:
-                    return True
-            elif(Condicao[2]=='!='):
-                if Query[i][Indice]<Query[i][Indice2]:
-                    return True
-                        
-        elif(Indice>-1):
-            if(Condicao[2]=='>'):
-                if Query[i][Indice]>Condicao[1]:
-                    return True
-            elif(Condicao[2]=='>='):
-                if Query[i][Indice]>=Condicao[1]:
-                    return True
-            elif(Condicao[2]=='<'):
-                if Query[i][Indice]<Condicao[1]:
-                    return True
-            elif(Condicao[2]=='<='):
-                if Query[i][Indice]<=Condicao[1]:
-                    return True
-            elif(Condicao[2]=='='):
-                if Query[i][Indice]==Condicao[1]:
-                    return True
-            elif(Condicao[2]=='!='):
-                if Query[i][Indice]<Condicao[1]:
-                    return True
-            
-        elif(Indice2>-1):
-            if(Condicao[2]=='>'):
-                if Condicao[0]>Query[i][Indice2]:
-                    return True
-            elif(Condicao[2]=='>='):
-                if Condicao[0]>=Query[i][Indice2]:
-                    return True
-            elif(Condicao[2]=='<'):
-                if Condicao[0]<Query[i][Indice2]:
-                    return True
-            elif(Condicao[2]=='<='):
-                if Condicao[0]<=Query[i][Indice2]:
-                    return True
-            elif(Condicao[2]=='='):
-                if Condicao[0]==Query[i][Indice2]:
-                    return True
-            elif(Condicao[2]=='!='):
-                if Condicao[0]<Query[i][Indice2]:
-                    return True
-        
-        else:
-            if(Condicao[2]=='>'):
-                if Condicao[0]>Condicao[1]:
-                    return True
-            elif(Condicao[2]=='>='):
-                if Condicao[0]>=Condicao[1]:
-                    return True
-            elif(Condicao[2]=='<'):
-                if Condicao[0]<Condicao[1]:
-                    return True
-            elif(Condicao[2]=='<='):
-                if Condicao[0]<=Condicao[1]:
-                    return True
-            elif(Condicao[2]=='='):
-                if Condicao[0]==Condicao[1]:
-                    return True
-            elif(Condicao[2]=='!='):
-                if Condicao[0]<Condicao[1]:
-                    return True
-
 def where(Query):
-    
+
     novaQuery=[]
     novaQuery.append(Query[0])
     comando = com_where
@@ -394,20 +189,20 @@ def where(Query):
     #verifica se há comando AND
     if(comando.find(" and ")>0):
         comando = comando.split(" and ")
-        condicao.append(procuraWhere(comando[0]))
-        condicao.append(procuraWhere(comando[1]))
+        condicao.append(Auxiliares.procuraWhere(comando[0]))
+        condicao.append(Auxiliares.procuraWhere(comando[1]))
         condicao.append("and")
 
     #verifica se há comando OR
     elif(comando.find(" or ")>0):
         comando = comando.split("or")
-        condicao.append(procuraWhere(comando[0]))
-        condicao.append(procuraWhere(comando[1]))
+        condicao.append(Auxiliares.procuraWhere(comando[0]))
+        condicao.append(Auxiliares.procuraWhere(comando[1]))
         condicao.append("or")
 
     #Caso não tenha and e or
     else:
-        condicao.append(procuraWhere(comando))    
+        condicao.append(Auxiliares.procuraWhere(comando))    
         
     #salvar o indice onde aparece o nome da coluna da tabela que será usado
     #caso não seja um nome de coluna, indice = -1    
@@ -423,7 +218,7 @@ def where(Query):
     #no caso de nao ter and ou or
     if(len(condicao)==1):
         for i in range(1,len(Query)):
-            if(comparacao(condicao[0], indice, indice2, Query, i)):
+            if(Auxiliares.comparacao(condicao[0], indice, indice2, Query, i)):
                 novaQuery.append(Query[i])
     
     #se tiver and ou or
@@ -439,12 +234,128 @@ def where(Query):
         
         if condicao[2]=='and':
             for i in range(1,len(Query)):
-                if(comparacao(condicao[0], indice, indice2, Query, i) and comparacao(condicao[1], indice3, indice4, Query, i)):
+                if(Auxiliares.comparacao(condicao[0], indice, indice2, Query, i) and Auxiliares.comparacao(condicao[1], indice3, indice4, Query, i)):
                     novaQuery.append(Query[i])
         
         if condicao[2]=='or':
             for i in range(1,len(Query)):
-                if(comparacao(condicao[0], indice, indice2, Query, i) or comparacao(condicao[1], indice3, indice4, Query, i)):
+                if(Auxiliares.comparacao(condicao[0], indice, indice2, Query, i) or Auxiliares.comparacao(condicao[1], indice3, indice4, Query, i)):
                     novaQuery.append(Query[i])
         
     return(novaQuery)
+
+def join(Query, Tabela, col1, col2, flag = 1):
+
+    QueryJoin = [[]]
+
+    # Apenas o cabeçalho é copiado uma única vez
+    for atributos in Query[0]:
+        QueryJoin[0].append(atributos)
+    if flag == 1:
+        for atributos in Tabela[0]:
+            QueryJoin[0].append(atributos)
+
+    indice_q = Query[0].index(col1)
+    indice_t = Tabela[0].index(col2)
+
+    cont = 1
+
+    # Para cada linha de uma tabela, a outra tabela gerará todas as suas linhas
+    for q in Query[1:]:
+        elem_q = q[indice_q]
+        for t in Tabela[1:]:
+            if (elem_q == t[indice_t]):
+                QueryJoin.append(q.copy())
+                QueryJoin[cont] += t.copy()
+                cont = cont + 1
+    
+    return QueryJoin
+
+# ON
+def joinOn(Query, ListaTabelasNome, ListaTabelas):
+
+    string = ''
+    for palavra in com_on:
+        string += palavra
+
+    lista = string.replace('.',' ').replace('=',' ').split(' ')
+
+    Auxiliares.removeElementosVazios(lista)
+
+    primeira_coluna = lista[1]
+    segunda_coluna = lista[-1]
+
+    primeira_tabela = lista[0]
+    segunda_tabela = lista[-2]
+
+    nome_tabela = com_join[0]
+    i = ListaTabelasNome.index(nome_tabela)
+    # Simplesmente é copiada a tabela conforme o índice presente na lista de tabelas
+    Tabela = ListaTabelas[i]
+
+    if (nome_tabela == primeira_tabela):
+        Auxiliares.trocaElementos(primeira_tabela, segunda_tabela)
+        Auxiliares.trocaElementos(primeira_coluna, segunda_coluna)
+
+    return join(Query, Tabela, primeira_coluna, segunda_coluna)
+
+# USING
+def joinUsing(Query, ListaTabelasNome, ListaTabelas):
+
+    string = ''
+    for palavra in com_using:
+        string += palavra
+
+    lista = string.replace('(','').replace(')','').split(' ')
+
+    Auxiliares.removeElementosVazios(lista)
+
+    coluna = lista[0]
+
+    nome_tabela = com_join[0]
+    i = ListaTabelasNome.index(nome_tabela)
+
+    # Simplesmente é copiada a tabela conforme o índice presente na lista de tabelas
+    Tabela = ListaTabelas[i]
+
+    QueryJoin = join(Query, Tabela, coluna, coluna)
+    
+    indice = QueryJoin[0].index(coluna)
+    for q in QueryJoin:
+        q.pop(indice)
+
+    return QueryJoin
+
+def joinWhere(Query):
+    string = ''
+    for palavra in com_where:
+        string += palavra
+
+    lista = string.replace('.',' ').replace('=',' ').split(' ')
+
+    Auxiliares.removeElementosVazios(lista)
+
+    primeira_coluna = lista[1]
+    segunda_coluna = lista[-1]
+
+    primeira_tabela = lista[0]
+    segunda_tabela = lista[-2]
+
+    if (com_from[1] == primeira_tabela):
+        Auxiliares.trocaElementos(primeira_tabela, segunda_tabela)
+        Auxiliares.trocaElementos(primeira_coluna, segunda_coluna)
+    
+    QueryJoin = [[]]
+
+    QueryJoin.append(Query[0].copy())
+
+    indice_1 = Query[0].index(primeira_coluna)
+    Query[0][indice_1] = ' '
+    indice_2 = Query[0].index(segunda_coluna)
+
+    for q in Query[1:]:
+        if (q[indice_1] == q[indice_2]):
+            QueryJoin.append(q)
+
+
+    return QueryJoin

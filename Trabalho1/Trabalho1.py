@@ -2,11 +2,14 @@
 #Eric Yutaka Fukuyama
 
 #Caminho = "/home/eric/Documentos/UTFPR/BancoDeDados/Trabalho1"
-#Caminho = "C:\\Users\\danie\\Documents\\Faculdade\\2022.2\\Introducao a Banco de Dados\\BancoDeDados\\Trabalho1"
-Caminho = input("Qual a pasta que está as tabelas? ")
+Caminho = "C:\\Users\\danie\\Documents\\Faculdade\\2022.2\\Introducao a Banco de Dados\\BancoDeDados\\Trabalho1"
+# Caminho = input("Qual a pasta que está as tabelas? ")
 
-#ListaTabelasNome = ["employees"]
-ListaTabelasNome = input("Nome de quais tabelas serão usadas? Escrever entre espaços: ").split()
+ListaTabelasNome = ["dept_emp_copia", "departments"]
+#ListaTabelasNome = input("Nome de quais tabelas serão usadas? Escrever entre espaços: ").split()
+
+for tabela in ListaTabelasNome:
+    tabela = tabela.casefold()
 
 import Comandos
 
@@ -30,8 +33,9 @@ ListaTabelas=[]
 
 # Chama função de criar tabela para cada uma digitada e assim são colocadas em lista
 for tabela in ListaTabelasNome:
-    (a, b) = criarTabela(Caminho+'/'+tabela+'.csv')
+    (a, b) = criarTabela(Caminho+'/'+tabela.casefold()+'.csv')
     ListaTabelas.append(a)
+    #print(tabela)
 
 # Funções chamadas
 #Comandos.printarComando()
