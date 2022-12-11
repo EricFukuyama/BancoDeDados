@@ -1,3 +1,5 @@
+# Esse arquivo contém funções auxiliares que não correspondem diretamente ao processo de cláusulas
+
 # MergeSort in Python (adaptação do código presente em https://www.programiz.com/dsa/merge-sort)
 def mergeSort(array, index):
     if len(array) > 1:
@@ -239,6 +241,7 @@ def comparacao(Condicao, Indice, Indice2, Query, i):
                 if Condicao[0]<Condicao[1]:
                     return True
 
+# Função que permite limpar uma lista mantendo apenas o que é necessário
 def removeElementosVazios(lista):
     i = len(lista)
     while(i > 0):
@@ -247,11 +250,13 @@ def removeElementosVazios(lista):
         except:
             i = -1
 
+# Clássica função para economizar 3 linhas
 def trocaElementos(el1, el2):
     aux = el1
     el1 = el2
     el2 = aux
 
+# Função que faz retornar a flag, realizando o ato de contar os elementos que devem ter em um where do tipo join
 def detectaJoin(lista):
     i = 0
     string = ''

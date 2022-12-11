@@ -1,7 +1,7 @@
 import Auxiliares
 
-comando = "SELECT * FROM dept_emp_Copia, departments where dept_emp_Copia.dept_no=departments.dept_no;".replace(',', ' ').replace(';', '').replace('\'', ' ').replace('\"', ' ').replace('(', ' ').rstrip(',').casefold().split()
-#comando = input("Qual o comando SQL? ").replace(',', ' ').replace(';', '').replace('\'', ' ').replace('\"', ' ').rstrip(',').casefold().replace('inner', ' ').split()
+#comando = "SELECT * FROM dept_emp_Copia join departments on dept_emp_Copia.dept_no = departments.dept_no;".replace(',', ' ').replace(';', '').replace('\'', ' ').replace('\"', ' ').replace('(', ' ').rstrip(',').casefold().split()
+comando = input("Qual o comando SQL? ").replace(',', ' ').replace(';', '').replace('\'', ' ').replace('\"', ' ').rstrip(',').casefold().replace('inner', ' ').split()
 
 print(comando)
 
@@ -36,6 +36,7 @@ except:
 com_select = comando[ind_select+1:ind_from]
 com_from = comando[ind_from+1:ind_join]
 
+com_join = []
 if (ind_using != ind_where):
     com_join = comando[ind_join+1:ind_using]
 elif (ind_on != ind_where):
@@ -46,6 +47,9 @@ com_on = comando[ind_on+1:ind_where]
 com_where = comando[ind_where+1:ind_order]
 com_order = comando[ind_order+2:tam_comando]
 
+#Chama uma função que detecta se join em where, essa flag será utilizada ao longo do código
+flagWhere = Auxiliares.detectaJoin(com_where)
+
 def printarComando():
     print(comando)
     print("")
@@ -54,20 +58,19 @@ def printarComando():
 def executarComando(ListaTabelasNome, ListaTabelas):
     # Gera tabela com todos os dados contidos em FROM
     Query = fromTudo(ListaTabelasNome, ListaTabelas)
-    
-    try:
-        if (len(com_on) != 0):
-            Query = joinOn(Query, ListaTabelasNome, ListaTabelas)
-        elif (len(com_using) != 0):
-            Query = joinUsing(Query, ListaTabelasNome, ListaTabelas)
-    except:
-        i = -1
 
+    # Caso haja on ou using, são chamados os joins respetivos
+    if (len(com_on) != 0):
+        Query = joinOn(Query, ListaTabelasNome, ListaTabelas, com_join[0])
+    elif (len(com_using) != 0):
+        Query = joinUsing(Query, ListaTabelasNome, ListaTabelas)
+    
     if (len(com_where) != 0):
-        #Gera tabela com os elementos que satisfazem o where
-        if (Auxiliares.detectaJoin(com_where)):
-            Query = joinWhere(Query)
+        if (flagWhere):
+            #Caso se comporte como Join, é passado de parâmetro tudo que indique sua natureza
+            Query = joinOn(Query, ListaTabelasNome, ListaTabelas, com_from[1])
         else:
+            #Gera tabela com os elementos que satisfazem o where
             Query = where(Query)
     
     if (len(com_order) != 0):
@@ -116,7 +119,7 @@ def fromTudo(ListaTabelasNome, ListaTabelas):
     Tabela = ListaTabelas[i]
 
     # Caso tiverem mais argumentos no From
-    if lenCom > 1:
+    if lenCom > 1 and flagWhere == False:
         Query = Tabela
         for nome_tabela in com_from[1:lenCom]:
             # Busca o índice de um atributo para achar a(s) tabela(s) correspondente(s)
@@ -244,23 +247,24 @@ def where(Query):
         
     return(novaQuery)
 
-def join(Query, Tabela, col1, col2, flag = 1):
+def join(Query, Tabela, col1, col2):
 
     QueryJoin = [[]]
 
     # Apenas o cabeçalho é copiado uma única vez
     for atributos in Query[0]:
         QueryJoin[0].append(atributos)
-    if flag == 1:
-        for atributos in Tabela[0]:
-            QueryJoin[0].append(atributos)
+    for atributos in Tabela[0]:
+        QueryJoin[0].append(atributos)
 
+    # Coleta índices para realizar o join conforme as colunas das respectivas tabelas
     indice_q = Query[0].index(col1)
     indice_t = Tabela[0].index(col2)
 
+    # Contador que que navega na lista QueryJoin colocando elementos novos após dado o append
     cont = 1
 
-    # Para cada linha de uma tabela, a outra tabela gerará todas as suas linhas
+    # Para caada linha de QueryJoin são copiadas as linhas de Query e de Tabela
     for q in Query[1:]:
         elem_q = q[indice_q]
         for t in Tabela[1:]:
@@ -272,27 +276,34 @@ def join(Query, Tabela, col1, col2, flag = 1):
     return QueryJoin
 
 # ON
-def joinOn(Query, ListaTabelasNome, ListaTabelas):
+def joinOn(Query, ListaTabelasNome, ListaTabelas, Nome_Tabela):
 
+    # String auxiliar que armazena os dados dos comandos contidos na lista (conforme a flag do where)
     string = ''
-    for palavra in com_on:
-        string += palavra
+    if (flagWhere == False):
+        for palavra in com_on:
+            string += palavra
+    else:
+        for palavra in com_where:
+            string += palavra
 
+    # Enxugado o que não é necessário
     lista = string.replace('.',' ').replace('=',' ').split(' ')
 
     Auxiliares.removeElementosVazios(lista)
 
+    # Elementos são definidos para auxiliar na identificação das tabelas e colunas
     primeira_coluna = lista[1]
     segunda_coluna = lista[-1]
-
     primeira_tabela = lista[0]
     segunda_tabela = lista[-2]
 
-    nome_tabela = com_join[0]
+    nome_tabela = Nome_Tabela
     i = ListaTabelasNome.index(nome_tabela)
     # Simplesmente é copiada a tabela conforme o índice presente na lista de tabelas
     Tabela = ListaTabelas[i]
 
+    # Para seguir corretamente a ordem de segunda lacuna pertencer ao comando o join
     if (nome_tabela == primeira_tabela):
         Auxiliares.trocaElementos(primeira_tabela, segunda_tabela)
         Auxiliares.trocaElementos(primeira_coluna, segunda_coluna)
@@ -302,60 +313,30 @@ def joinOn(Query, ListaTabelasNome, ListaTabelas):
 # USING
 def joinUsing(Query, ListaTabelasNome, ListaTabelas):
 
+    # String auxiliar que armazena os dados dos comandos contidos na lista
     string = ''
     for palavra in com_using:
         string += palavra
 
+    # Enxugado o que não é necessário
     lista = string.replace('(','').replace(')','').split(' ')
 
     Auxiliares.removeElementosVazios(lista)
 
+    # Na lista auxiliar e agora limpada, é armazenada a string do using()
     coluna = lista[0]
 
     nome_tabela = com_join[0]
     i = ListaTabelasNome.index(nome_tabela)
-
     # Simplesmente é copiada a tabela conforme o índice presente na lista de tabelas
     Tabela = ListaTabelas[i]
 
+    # Chamada a função generalizada para ambas as colunas
     QueryJoin = join(Query, Tabela, coluna, coluna)
     
+    # Como o using permite a retirada de colunas repetidas, é realizado esse processo com pop()
     indice = QueryJoin[0].index(coluna)
     for q in QueryJoin:
         q.pop(indice)
-
-    return QueryJoin
-
-def joinWhere(Query):
-    string = ''
-    for palavra in com_where:
-        string += palavra
-
-    lista = string.replace('.',' ').replace('=',' ').split(' ')
-
-    Auxiliares.removeElementosVazios(lista)
-
-    primeira_coluna = lista[1]
-    segunda_coluna = lista[-1]
-
-    primeira_tabela = lista[0]
-    segunda_tabela = lista[-2]
-
-    if (com_from[1] == primeira_tabela):
-        Auxiliares.trocaElementos(primeira_tabela, segunda_tabela)
-        Auxiliares.trocaElementos(primeira_coluna, segunda_coluna)
-    
-    QueryJoin = [[]]
-
-    QueryJoin.append(Query[0].copy())
-
-    indice_1 = Query[0].index(primeira_coluna)
-    Query[0][indice_1] = ' '
-    indice_2 = Query[0].index(segunda_coluna)
-
-    for q in Query[1:]:
-        if (q[indice_1] == q[indice_2]):
-            QueryJoin.append(q)
-
 
     return QueryJoin
