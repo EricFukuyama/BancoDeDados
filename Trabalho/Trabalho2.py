@@ -1,11 +1,11 @@
 #Daniel Augusto Pires de Castro
 #Eric Yutaka Fukuyama
 
-#Caminho = "/home/eric/Documentos/UTFPR/BancoDeDados/Trabalho"
+# Caminho = "/home/eric/Documentos/UTFPR/BancoDeDados/Trabalho"
 #Caminho = "C:\\Users\\danie\\Documents\\Faculdade\\2022.2\\Introducao a Banco de Dados\\BancoDeDados\\Trabalho"
 Caminho = input("Qual a pasta que está as tabelas? ")
 
-#ListaTabelasNome = ["dept_emp", "departments"]
+# ListaTabelasNome = ["dept_emp", "departments"]
 ListaTabelasNome = input("Nome de quais tabelas serão usadas? Escrever em minúsculo e entre espaços: ").split()
 
 for tabela in ListaTabelasNome:

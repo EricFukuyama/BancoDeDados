@@ -1,9 +1,12 @@
+#Daniel Augusto Pires de Castro
+#Eric Yutaka Fukuyama
+
 import Auxiliares
 
 #comando = "SELECT * FROM dept_emp_Copia join departments on dept_emp_Copia.dept_no = departments.dept_no;".replace(',', ' ').replace(';', '').replace('\'', ' ').replace('\"', ' ').replace('(', ' ').rstrip(',').casefold().split()
-comando = input("Qual o comando SQL? ").replace(',', ' ').replace(';', '').replace('\'', ' ').replace('\"', ' ').rstrip(',').casefold().replace('inner', ' ').split()
+comando = input("Qual o comando SQL? ").replace(',', ' ').replace(';', '').replace('\'', ' ').replace('\"', ' ').rstrip(',').casefold().replace('inner', ' ').replace('(',' ').replace(')',' ').split()
 
-print(comando)
+# print(comando)
 
 # Computando os índices em que se encontram os comandos na lista
 ind_select = comando.index('select')
@@ -261,10 +264,10 @@ def join(Query, Tabela, col1, col2):
     indice_q = Query[0].index(col1)
     indice_t = Tabela[0].index(col2)
 
-    # Contador que que navega na lista QueryJoin colocando elementos novos após dado o append
+    # Contador que navega na lista QueryJoin colocando elementos novos após dado o append
     cont = 1
 
-    # Para caada linha de QueryJoin são copiadas as linhas de Query e de Tabela
+    # Para cada linha de QueryJoin são copiadas as linhas de Query e de Tabela
     for q in Query[1:]:
         elem_q = q[indice_q]
         for t in Tabela[1:]:

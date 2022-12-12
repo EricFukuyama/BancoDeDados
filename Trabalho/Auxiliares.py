@@ -1,3 +1,6 @@
+#Daniel Augusto Pires de Castro
+#Eric Yutaka Fukuyama
+
 # Esse arquivo contém funções auxiliares que não correspondem diretamente ao processo de cláusulas
 
 # MergeSort in Python (adaptação do código presente em https://www.programiz.com/dsa/merge-sort)
